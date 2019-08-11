@@ -14,11 +14,11 @@ fn handler2(a: usize, b: usize) {
     println!("handler[2]: {}, {}", a, b);
 }
 
-trait FlexHandler<T, R> {
+trait Handler<T, R> {
     fn call(&self, param: T) -> R;
 }
 
-impl<F, R> FlexHandler<(), R> for F
+impl<F, R> Handler<(), R> for F
 where
     F: Fn() -> R
 {
@@ -27,7 +27,7 @@ where
     }
 }
 
-impl<F, R, A> FlexHandler<(A,), R> for F
+impl<F, R, A> Handler<(A,), R> for F
 where
     F: Fn(A) -> R
 {
