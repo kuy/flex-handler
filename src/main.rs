@@ -1,8 +1,13 @@
+use std::env;
 use std::marker::PhantomData;
+use std::result::Result;
 
 mod extensions;
 
 use crate::extensions::Extensions;
+
+use env_logger;
+use log::error;
 
 fn handler0() {
     println!("handler[0]");
@@ -13,7 +18,7 @@ fn handler1(a: &str) {
 }
 
 fn handler1i(a: i32) {
-    println!("handler[1u]: {}", a);
+    println!("handler[1i]: {}", a);
 }
 
 fn handler2(a: &str, b: i32) {
@@ -63,7 +68,7 @@ struct Dispatcher<T, R, F = Handler<T, R>> {
 impl<T, R, F> Dispatcher<T, R, F>
 where
     F: Handler<T, R>,
-    T: PickUp<Item = T>,
+    T: PickUp<Item = Result<T, &'static str>>,
 {
     fn new(handler: F) -> Self {
         Dispatcher {
@@ -73,7 +78,13 @@ where
     }
 
     fn run(&self, bag: &Extensions) -> R {
-        self.handler.call(T::pick_up(bag))
+        match T::pick_up(bag) {
+            Ok(param) => self.handler.call(param),
+            Err(msg) => {
+                error!("{}", msg);
+                panic!()
+            },
+        }
     }
 }
 
@@ -84,54 +95,75 @@ trait PickUp: Sized {
 }
 
 impl PickUp for &str {
-    type Item = Self;
+    type Item = Option<Self>;
 
     fn pick_up(bag: &Extensions) -> Self::Item {
         if let Some(item) = bag.get::<&str>() {
-            item
+            Some(item)
         } else {
-            ""
+            None
         }
     }
 }
 
 impl PickUp for i32 {
-    type Item = Self;
+    type Item = Option<Self>;
 
     fn pick_up(bag: &Extensions) -> Self::Item {
         if let Some(item) = bag.get::<i32>() {
-            item.clone()
+            Some(item.clone())
         } else {
-            0
+            None
         }
     }
 }
 
 impl PickUp for () {
-    type Item = ();
+    type Item = Result<(), &'static str>;
 
     fn pick_up(_bag: &Extensions) -> Self::Item {
-        ()
+        Ok(())
     }
 }
 
-impl<A: PickUp<Item = A>> PickUp for (A,) {
-    type Item = (A,);
+impl<A: PickUp<Item = Option<A>>> PickUp for (A,) {
+    type Item = Result<(A,), &'static str>;
 
     fn pick_up(bag: &Extensions) -> Self::Item {
-        (A::pick_up(bag),)
+        let item_a = if let Some(item) = A::pick_up(bag) {
+            item
+        } else {
+            return Err("PickUp Error A of (A,)")
+        };
+
+        Ok((item_a,))
     }
 }
 
-impl<A: PickUp<Item = A>, B: PickUp<Item = B>> PickUp for (A, B) {
-    type Item = (A, B);
+impl<A: PickUp<Item = Option<A>>, B: PickUp<Item = Option<B>>> PickUp for (A, B) {
+    type Item = Result<(A, B), &'static str>;
 
     fn pick_up(bag: &Extensions) -> Self::Item {
-        (A::pick_up(bag), B::pick_up(bag))
+        let item_a = if let Some(item) = A::pick_up(bag) {
+            item
+        } else {
+            return Err("PickUp Error A of (A, B)")
+        };
+
+        let item_b = if let Some(item) = B::pick_up(bag) {
+            item
+        } else {
+            return Err("PickUp Error B of (A, B)")
+        };
+
+        Ok((item_a, item_b))
     }
 }
 
 fn main() {
+    env::set_var("RUST_LOG", "info");
+    env_logger::init();
+
     let f0 = handler0;
     f0();
     f0.call(());
@@ -161,6 +193,9 @@ fn main() {
 
     let d1 = Dispatcher::new(handler1);
     d1.run(&bag);
+
+    let d1i = Dispatcher::new(handler1i);
+    d1i.run(&bag);
 
     let d2 = Dispatcher::new(handler2);
     d2.run(&bag);
