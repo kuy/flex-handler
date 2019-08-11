@@ -1,4 +1,3 @@
-use std::fmt;
 use std::marker::PhantomData;
 
 mod extensions;
@@ -9,19 +8,19 @@ fn handler0() {
     println!("handler[0]");
 }
 
-fn handler1(a: Envelope<String>) {
+fn handler1(a: String) {
     println!("handler[1]: {}", a);
 }
 
-fn handler1i(a: Envelope<i32>) {
+fn handler1i(a: i32) {
     println!("handler[1u]: {}", a);
 }
 
-fn handler2(a: Envelope<String>, b: Envelope<i32>) {
+fn handler2(a: String, b: i32) {
     println!("handler[2]: {}, {}", a, b);
 }
 
-fn handler2s(a: Envelope<i32>, b: Envelope<String>) {
+fn handler2s(a: i32, b: String) {
     println!("handler[2s]: {}, {}", a, b);
 }
 
@@ -78,46 +77,32 @@ where
     }
 }
 
-struct Envelope<T>(T);
-
-impl<T: Clone> Clone for Envelope<T> {
-    fn clone(&self) -> Envelope<T> {
-        Envelope(self.0.clone())
-    }
-}
-
-impl<T: fmt::Display> fmt::Display for Envelope<T> {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
 trait PickUp: Sized {
     type Item;
 
     fn pick_up(bag: &Extensions) -> Self::Item;
 }
 
-impl PickUp for Envelope<String> {
-    type Item = Envelope<String>;
+impl PickUp for String {
+    type Item = Self;
 
     fn pick_up(bag: &Extensions) -> Self::Item {
-        if let Some(item) = bag.get::<Envelope<String>>() {
+        if let Some(item) = bag.get::<String>() {
             item.clone()
         } else {
-            Envelope("".to_string())
+            "".to_string()
         }
     }
 }
 
-impl PickUp for Envelope<i32> {
-    type Item = Envelope<i32>;
+impl PickUp for i32 {
+    type Item = Self;
 
     fn pick_up(bag: &Extensions) -> Self::Item {
-        if let Some(item) = bag.get::<Envelope<i32>>() {
+        if let Some(item) = bag.get::<i32>() {
             item.clone()
         } else {
-            Envelope(0)
+            0
         }
     }
 }
@@ -152,24 +137,24 @@ fn main() {
     f0.call(());
 
     let f1 = handler1;
-    f1(Envelope("Universe".to_string()));
-    f1.call((Envelope("Universe".to_string()),));
+    f1("Universe".to_string());
+    f1.call(("Universe".to_string(),));
 
     let f1i = handler1i;
-    f1i(Envelope(42));
-    f1i.call((Envelope(42),));
+    f1i(42);
+    f1i.call((42,));
 
     let f2 = handler2;
-    f2(Envelope("Universe".to_string()), Envelope(42));
-    f2.call((Envelope("Universe".to_string()), Envelope(42)));
+    f2("Universe".to_string(), 42);
+    f2.call(("Universe".to_string(), 42));
 
     let f2s = handler2s;
-    f2s(Envelope(42), Envelope("Universe".to_string()));
-    f2s.call((Envelope(42), Envelope("Universe".to_string())));
+    f2s(42, "Universe".to_string());
+    f2s.call((42, "Universe".to_string()));
 
     let mut bag = Extensions::new();
-    bag.insert(Envelope("Universe".to_string()));
-    bag.insert(Envelope(42));
+    bag.insert("Universe".to_string());
+    bag.insert(42);
 
     let d0 = Dispatcher::new(handler0);
     d0.run(&bag);
