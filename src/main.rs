@@ -8,7 +8,7 @@ fn handler0() {
     println!("handler[0]");
 }
 
-fn handler1(a: String) {
+fn handler1(a: &str) {
     println!("handler[1]: {}", a);
 }
 
@@ -16,11 +16,11 @@ fn handler1i(a: i32) {
     println!("handler[1u]: {}", a);
 }
 
-fn handler2(a: String, b: i32) {
+fn handler2(a: &str, b: i32) {
     println!("handler[2]: {}, {}", a, b);
 }
 
-fn handler2s(a: i32, b: String) {
+fn handler2s(a: i32, b: &str) {
     println!("handler[2s]: {}, {}", a, b);
 }
 
@@ -83,14 +83,14 @@ trait PickUp: Sized {
     fn pick_up(bag: &Extensions) -> Self::Item;
 }
 
-impl PickUp for String {
+impl PickUp for &str {
     type Item = Self;
 
     fn pick_up(bag: &Extensions) -> Self::Item {
-        if let Some(item) = bag.get::<String>() {
-            item.clone()
+        if let Some(item) = bag.get::<&str>() {
+            item
         } else {
-            "".to_string()
+            ""
         }
     }
 }
@@ -137,23 +137,23 @@ fn main() {
     f0.call(());
 
     let f1 = handler1;
-    f1("Universe".to_string());
-    f1.call(("Universe".to_string(),));
+    f1("Universe");
+    f1.call(("Universe",));
 
     let f1i = handler1i;
     f1i(42);
     f1i.call((42,));
 
     let f2 = handler2;
-    f2("Universe".to_string(), 42);
-    f2.call(("Universe".to_string(), 42));
+    f2("Universe", 42);
+    f2.call(("Universe", 42));
 
     let f2s = handler2s;
-    f2s(42, "Universe".to_string());
-    f2s.call((42, "Universe".to_string()));
+    f2s(42, "Universe");
+    f2s.call((42, "Universe"));
 
     let mut bag = Extensions::new();
-    bag.insert("Universe".to_string());
+    bag.insert("Universe");
     bag.insert(42);
 
     let d0 = Dispatcher::new(handler0);
