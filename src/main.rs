@@ -10,7 +10,7 @@ fn handler1s(a: &str) {
     println!("handler[1s]: {}", a);
 }
 
-fn handler2(a: usize, b: usize) {
+fn handler2(a: usize, b: &str) {
     println!("handler[2]: {}, {}", a, b);
 }
 
@@ -36,6 +36,15 @@ where
     }
 }
 
+impl<F, R, A, B> Handler<(A, B), R> for F
+where
+    F: Fn(A, B) -> R
+{
+    fn call(&self, param: (A, B)) -> R {
+        (self)(param.0, param.1)
+    }
+}
+
 fn main() {
     let f0 = handler0;
     f0();
@@ -48,4 +57,8 @@ fn main() {
     let f1s = handler1s;
     f1s("x");
     f1s.call(("x",));
+
+    let f2 = handler2;
+    f2(42, "x");
+    f2.call((42, "x"));
 }
