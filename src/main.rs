@@ -164,26 +164,6 @@ fn main() {
     env::set_var("RUST_LOG", "info");
     env_logger::init();
 
-    let f0 = handler0;
-    f0();
-    f0.call(());
-
-    let f1 = handler1;
-    f1("Universe");
-    f1.call(("Universe",));
-
-    let f1i = handler1i;
-    f1i(42);
-    f1i.call((42,));
-
-    let f2 = handler2;
-    f2("Universe", 42);
-    f2.call(("Universe", 42));
-
-    let f2s = handler2s;
-    f2s(42, "Universe");
-    f2s.call((42, "Universe"));
-
     let mut bag = Extensions::new();
     bag.insert("Universe");
     bag.insert(42);
